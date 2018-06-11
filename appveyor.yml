@@ -28,6 +28,12 @@ install:
     cargo -V
 
     vcpkg install libsodium:%VCPKG_TARGET%
+
+    mkdir C:\msys
+    mkdir C:\msys\mingw
+
+    curl -sSf http://releases.llvm.org/%LLVM_VERSION%/LLVM-%LLVM_VERSION%-%LLVM_PLATFORM%.exe -o LLVM.exe
+    7z x LLVM.exe -oC:\msys\mingw
 cache:
 - C:\Users\appveyor\.cargo\registry
 - target
