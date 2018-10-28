@@ -29,7 +29,7 @@
 //!  `crypto::sign`
 //!
 //! # Sealed boxes
-//!  `crypto::sealedox`
+//!  `crypto::sealedbox`
 //!
 //! # Secret-key cryptography
 //!  `crypto::secretbox`
@@ -57,6 +57,7 @@
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
 extern crate libsodium_sys as ffi;
+
 extern crate libc;
 #[cfg(any(test, feature = "serde"))]
 extern crate serde;
@@ -68,9 +69,13 @@ extern crate alloc;
 #[cfg(all(test, not(feature = "std")))]
 extern crate std;
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 #[cfg(all(not(test), not(feature = "std")))]
 mod std {
-    pub use core::{cmp, fmt, hash, iter, mem, ops, slice, str};
+    pub use core::{cmp, fmt, hash, iter, mem, ops, ptr, slice, str};
 }
 
 #[cfg(not(feature = "std"))]
@@ -111,6 +116,7 @@ pub mod crypto {
     pub mod scalarmult;
     pub mod auth;
     pub mod hash;
+    pub mod generichash;
     pub mod secretbox;
     pub mod onetimeauth;
     pub mod pwhash;
