@@ -4,6 +4,9 @@ extern crate pkg_config;
 use std::env;
 use std::path::PathBuf;
 
+#[cfg(target_env = "msvc")]
+extern crate vcpkg;
+
 fn main() {
     println!("cargo:rerun-if-env-changed=SODIUM_LIB_DIR");
     println!("cargo:rerun-if-env-changed=SODIUM_INC_DIR");
@@ -22,12 +25,16 @@ fn main() {
             println!("cargo:rustc-link-lib={0}=sodium", mode);
         }
     } else {
-        pkg_config::find_library("libsodium").unwrap();
+        if !pkg_config::probe_library("libsodium").is_ok() && !try_vcpkg() {
+            panic!("Could not find libsodium on this system!")
+        }
     }
 
     let include_dir = match env::var("SODIUM_INC_DIR") {
         Ok(dir) => dir,
-        Err(_) => pkg_config::get_variable("libsodium", "includedir").unwrap()
+        Err(_) => pkg_config::get_variable("libsodium", "includedir").unwrap_or_else(|_| {
+            get_vcpkg_include_path().unwrap()
+        })
     };
 
     let bindings = bindgen::Builder::default()
@@ -44,4 +51,33 @@ fn main() {
     bindings
         .write_to_file(out_path.join("sodium_bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+#[cfg(target_env = "msvc")]
+fn try_vcpkg() -> bool {
+    vcpkg::Config::new()
+        .lib_name("libsodium")
+        .probe("libsodium")
+        .is_ok() ||  vcpkg::probe_package("libsodium").is_ok()
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn try_vcpkg() -> bool {
+    false
+}
+
+
+#[cfg(target_env = "msvc")]
+fn get_vcpkg_include_path() -> Option<String> {
+    let lib = vcpkg::probe_package("libsodium");
+    match lib {
+        Ok(lib) => lib.include_paths.get(0).and_then(|path| path.clone().into_os_string().into_string().ok()),
+        _ => None,
+    }
+
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn get_vcpkg_include_path() -> Option<String> {
+    None
 }
